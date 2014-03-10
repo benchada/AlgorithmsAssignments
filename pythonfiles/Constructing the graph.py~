@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections import priorityDictionary
+from collections import prioritydictionary
 class Vertex:
 	def __init__(self,key):
 		self.id=key

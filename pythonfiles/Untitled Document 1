@@ -1,0 +1,230 @@
+import re
+import numpy as np
+from numpy import copy
+from operator import itemgetter
+
+
+#scc function, given an edge table, find all the SCC's and sort from largest to smallest
+def scc(myInputList, mylistlength):
+    global vertexStateTable
+    global t
+    global finishingTime
+    global vertexStateTable2
+
+    #put input list in numpy format
+    directedGraph = np.array(myInputList)
+
+    #define max source
+    maxSource = directedGraph[:,0].max()
+
+    #define max target
+    maxTarget = directedGraph[:,1].max()
+
+    #define max vertex
+    maxVertex = directedGraph.max()
+
+    #define a state table[]    [seen vertices set]
+    vertexStateTable = set([])
+
+    #define the finishing time counter
+    t=0
+
+    #define the finishing time dictionary
+    finishingTime = {}
+
+    #dfs loop
+    for i in reversed(xrange(1, maxVertex+1)):
+        #check if it's in the vertex state table for vertices already seen
+        if i not in vertexStateTable:
+            DFSFinish(directedGraph, i)
+
+    print "Completed first round.  Finishing Times."
+
+    #finishing time dictionary completed, now create equivalent 
+    #create finished list in numpy format, replacing original list with state table finishing times from the first round
+    finishedDirectedGraph = maskDirectedGraph(directedGraph, finishingTime)
+
+    print "Masking Complete."
+
+    #set vertexStateTable for second pass 
+    vertexStateTable2 = set([])
+
+
+
+    #initialize group counter
+    sccSizes = np.array([])
+
+    print "starting outer loop second round."
+    #dfs loop
+    for i in reversed(xrange(1,maxVertex + 1)):
+
+        #check if it's in the vertex state table, already seen
+        if i not in vertexStateTable2:
+            #initialize time
+            t=0 
+
+
+            #DFSFinishingTimes(given list, max vertex, statetable)
+            DFSSCCFinder(finishedDirectedGraph, i)
+
+
+
+            #append groups, leader
+            if sccSizes.size ==0:
+                sccSizes=np.array([[i,t]])
+            else:
+                sccSizes = np.concatenate((sccSizes, [[i,t]]))
+
+    print "Completed SCC second round."
+
+#resort scc table by number of members
+    sortedSCCTable = sorted(sccSizes, key=itemgetter(1), reverse=True)
+
+    #return final scc Table
+    return sortedSCCTable
+
+
+#function to mask all the elements of the graph using key value pairs from dictionary
+def maskDirectedGraph(myGraph, myDictionary):
+    newGraph = copy(myGraph)
+    for elem in newGraph:
+        count0 = 0
+        count1 = 0
+        for k, v in myDictionary.iteritems():
+            if count0+count1 == 2:
+                break
+            if elem[0]==k and count0==0:
+                elem[0]=v
+                count0+=1
+            if elem[1]==k and count1==0:
+                elem[1]=v
+                count1+=1       
+    return newGraph
+
+#DFSFinishingTimes, given graph and starting vertex(list, vertex i ), perform a DFX loop, update the dictionary table of finishing times 
+def DFSFinish(myDirectedGraph, myVertex):   
+    #first initialize some variables
+    global vertexStateTable
+    global t
+    global finishingTime
+
+
+
+    #get usable edges
+        #find all instances of myvertex in column 2, return pair
+    wanted_set = set([myVertex])  # Much faster look up than with lists, for larger lists
+
+
+    @np.vectorize
+    def selected(elmt): return elmt in wanted_set  # Or: selected = wanted_set.__contains__
+
+    outgoingConnectedEdges =  myDirectedGraph[selected(myDirectedGraph[:, 1])]
+
+
+    if myVertex in vertexStateTable:
+        return
+
+    if outgoingConnectedEdges is None:
+        if myDirectedGraph[selected(myDirectedGraph[:, 0])] is None:
+            return
+
+    #initialize unexploredOutgoingConnectedEdges
+    unexploredOutgoingConnectedEdges = np.array([])
+    #get unexplored directed edges.
+        #loop through outgoing connected edges, keeping only those which are not on the list
+    for edge in outgoingConnectedEdges:
+        if edge[0] not in vertexStateTable:
+            if unexploredOutgoingConnectedEdges.size == 0:
+                unexploredOutgoingConnectedEdges=np.array([edge])
+            else:
+            unexploredOutgoingConnectedEdges = np.concatenate((unexploredOutgoingConnectedEdges, [edge]))
+
+
+    #add current vertex to vertexStateTable as seen.
+    if myVertex not in vertexStateTable:
+        vertexStateTable.add(myVertex)
+
+
+    #for each unexplored arc, recursively run the DFSFinish
+    for unexplored in unexploredOutgoingConnectedEdges:
+        DFSFinish(myDirectedGraph, unexplored[0])
+
+    t = t+1
+
+    finishingTime[myVertex] = t
+
+#DFSSCCFinder, given graph with vertices renamed by finishing times, perform DFX loop, counting members instead of assigning finishingTimes
+def DFSSCCFinder(myDirectedGraph, myVertex):    
+    global vertexStateTable2 
+    global t
+
+    #get usable edges
+        #find all instances of myvertex in column 1, return pair
+    wanted_set = set([myVertex])  # Much faster look up than with lists, for larger lists
+
+
+    @np.vectorize
+    def selected(elmt): return elmt in wanted_set  # Or: selected = wanted_set.__contains__
+
+
+    outgoingConnectedEdges =  myDirectedGraph[selected(myDirectedGraph[:, 0])]
+
+    if myVertex in vertexStateTable2:
+        return
+
+    if outgoingConnectedEdges is None:
+        if myDirectedGraph[selected(myDirectedGraph[:, 1])] is None:
+            return
+
+    #initialize unexploredOutgoingConnectedEdges
+    unexploredOutgoingConnectedEdges = np.array([])
+    #get unexplored directed edges.
+        #loop through outgoing connected edges, keeping only those which are not on the list
+    for edge in outgoingConnectedEdges:
+        if edge[1] not in vertexStateTable2:
+            if unexploredOutgoingConnectedEdges.size==0:
+                unexploredOutgoingConnectedEdges = np.array([edge])
+            else:
+                unexploredOutgoingConnectedEdges = np.concatenate((unexploredOutgoingConnectedEdges, [edge]))
+
+
+    #add current vertex to myStateTable as seen.
+    if myVertex not in vertexStateTable2:
+        vertexStateTable2.add(myVertex)
+
+
+    #for each unexplored arc, recursively run the DFSFinish
+    for unexplored in unexploredOutgoingConnectedEdges:
+        DFSSCCFinder(myDirectedGraph, unexplored[1])
+
+    #finished node, so increment finishing time counter
+    t = t+1
+
+
+#main procedure
+while 1==1:
+    masterInputList = []
+    try:
+        with open(raw_input("soc-Slashdot0811.txt")) as f:
+            for line in f:
+                masterInputList.append([int(x) for x in re.findall(r'\b\S+\b',line)])
+
+        #define length of unsorted list: listLength
+        masterListLength = len(masterInputList)
+        print "List Length = "
+        print masterListLength
+
+
+        stronglyConnectedComponents = scc(masterInputList, masterListLength)
+
+        #then print the sorted list
+        print "Sorted List of Strongly Connected Component Groups(10):"
+        iCount=0
+        for line in stronglyConnectedComponents:
+            print line
+            iCount+=1
+            if iCount>=10:
+                break
+
+    except IOError:
+        print "File Not Found"

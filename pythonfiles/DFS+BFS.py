@@ -33,8 +33,29 @@ def recursive_dfs(graph, start, path=[]):
    |   \ | /
    +---- E
 '''
+
+#Testing
 graph = {'A':['B','C'],'B':['D','E'],'C':['D','E'],'D':['E'],'E':[]}
 nodes_counter =0
 component =0
-print (recursive_dfs(graph, 'A'))
+print (recursive_dfs(graph, graph[0]))
 print (component, nodes_counter)
+
+#We construct the reverse tree:
+
+g = defaultdict(list)  
+gr =defaultdict(list) 
+for i in len(lines):
+	fromN, toN = lines[i].split(' ')  #From Node  to another node = getting the values
+	gr[toN].append[fromN]
+
+#Running DFS on Gr
+recursive_dfs(gr, start)
+
+
+
+
+nodes_counter =0
+component =0
+print (component, nodes_counter)
+

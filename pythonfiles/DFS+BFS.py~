@@ -36,5 +36,5 @@ def recursive_dfs(graph, start, path=[]):
 graph = {'A':['B','C'],'B':['D','E'],'C':['D','E'],'D':['E'],'E':[]}
 nodes_counter =0
 component =0
-print (recursive_dfs(graph, 'C'))
+print (recursive_dfs(graph, graph[0]))
 print (component, nodes_counter)
